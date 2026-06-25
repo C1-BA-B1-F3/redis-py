@@ -1086,7 +1086,10 @@ class PubSub:
     async def _resubscribe(self, subscribed, subscribe_fn) -> None:
         # Replay handler-backed subscriptions as positional Subscription objects
         # so binary names never need to be decoded into keyword argument keys.
-        subscriptions = pubsub_subscription_args(subscribed)
+        # Snapshot the dict to avoid RuntimeError if handle_message()
+        # mutates self.channels / self.patterns / self.shard_channels
+        # while we are iterating (e.g. via .pop() on unsubscribe messages).
+        subscriptions = pubsub_subscription_args(dict(subscribed))
         if subscriptions:
             await subscribe_fn(*subscriptions)
 
